@@ -473,7 +473,7 @@ const NSInteger TRANSPARENT_NAVBAR_TAG = 78264803;
 //            self.navigationController.interactivePopGestureRecognizer.delegate = self;
 //        }
 //    }
-//}
+}
 
 -(void)storeOriginalNavBarImages {
     
