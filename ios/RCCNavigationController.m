@@ -264,14 +264,16 @@ NSString const *CALLBACK_ASSOCIATED_ID = @"RCCNavigationController.CALLBACK_ASSO
     id icon = button[@"icon"];
     if (icon) iconImage = [RCTConvert UIImage:icon];
     
+    UIBarButtonItemStyle itemStyle = [button[@"style"] isEqualToString:@"done"] ? UIBarButtonItemStyleDone : UIBarButtonItemStylePlain;
+    
     UIBarButtonItem *barButtonItem;
     if (iconImage)
     {
-      barButtonItem = [[UIBarButtonItem alloc] initWithImage:iconImage style:UIBarButtonItemStylePlain target:self action:@selector(onButtonPress:)];
+      barButtonItem = [[UIBarButtonItem alloc] initWithImage:iconImage style:itemStyle target:self action:@selector(onButtonPress:)];
     }
     else if (title)
     {
-      barButtonItem = [[UIBarButtonItem alloc] initWithTitle:title style:UIBarButtonItemStylePlain target:self action:@selector(onButtonPress:)];
+      barButtonItem = [[UIBarButtonItem alloc] initWithTitle:title style:itemStyle target:self action:@selector(onButtonPress:)];
     }
     else continue;
     objc_setAssociatedObject(barButtonItem, &CALLBACK_ASSOCIATED_KEY, button[@"onPress"], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
