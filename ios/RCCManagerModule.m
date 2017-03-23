@@ -43,6 +43,17 @@ RCT_ENUM_CONVERTER(UIModalPresentationStyle,
 
 @end
 
+@implementation RCTConvert (UIModalTransitionStyle)
+
+RCT_ENUM_CONVERTER(UIModalTransitionStyle,
+                   (@{@"coverVertical": @(UIModalTransitionStyleCoverVertical),
+                      @"flipHorizontal": @(UIModalTransitionStyleFlipHorizontal),
+                      @"crossDissolve": @(UIModalTransitionStyleCrossDissolve),
+                      @"partialCurl": @(UIModalTransitionStylePartialCurl),
+                      }), UIModalTransitionStyleCoverVertical, integerValue)
+
+@end
+
 @implementation RCCManagerModule
 
 RCT_EXPORT_MODULE(RCCManager);
@@ -329,6 +340,16 @@ RCT_EXPORT_METHOD(
     if (layout[@"props"] && [layout[@"props"] isKindOfClass:[NSDictionary class]] && layout[@"props"][@"style"] && [layout[@"props"][@"style"] isKindOfClass: [NSDictionary class]]) {
         
         NSDictionary *style = layout[@"props"][@"style"];
+      
+        // map modal transition style string to enum
+        if (style[@"modalTransitionStyle"] && [style[@"modalTransitionStyle"] isKindOfClass:[NSString class]]) {
+          
+            NSString *transitionStyle = style[@"modalTransitionStyle"];
+            UIModalTransitionStyle modalTransitionStyle = [RCTConvert UIModalTransitionStyle:transitionStyle];
+            controller.modalTransitionStyle = modalTransitionStyle;
+        }
+      
+        // map modal presentation style string to enum
         if (style[@"modalPresentationStyle"] && [style[@"modalPresentationStyle"] isKindOfClass:[NSString class]]) {
             
             NSString *presentationStyle = style[@"modalPresentationStyle"];
@@ -336,7 +357,7 @@ RCT_EXPORT_METHOD(
             controller.modalPresentationStyle = modalPresentationStyle;
         }
     }
-    
+  
     [[RCCManagerModule lastModalPresenterViewController] presentViewController:controller
                                                                       animated:![animationType isEqualToString:@"none"]
                                                                     completion:^(){ resolve(nil); }];
