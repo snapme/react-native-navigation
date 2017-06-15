@@ -1,6 +1,6 @@
 /*eslint-disable*/
 import React, {Component} from 'react';
-import {AppRegistry, NativeModules, processColor} from 'react-native';
+import ReactNative, {AppRegistry, NativeModules, processColor} from 'react-native';
 import _ from 'lodash';
 
 import Navigation from './../Navigation';
@@ -73,6 +73,7 @@ function navigatorPush(navigator, params) {
   addNavigationStyleParams(params);
 
   adaptTopTabs(params, params.navigatorID);
+  // findSharedElementsNodeHandles(params);
 
   params.screenId = params.screen;
   let adapted = adaptNavigationStyleToScreenStyle(params);
@@ -153,6 +154,8 @@ function convertStyleParams(originalStyleObject) {
     titleBarSubtitleColor: processColor(originalStyleObject.navBarSubtitleColor),
     titleBarButtonColor: processColor(originalStyleObject.navBarButtonColor),
     titleBarDisabledButtonColor: processColor(originalStyleObject.titleBarDisabledButtonColor),
+    titleBarTitleFontFamily: originalStyleObject.navBarTextFontFamily,
+    titleBarTitleTextCentered: originalStyleObject.navBarTitleTextCentered,
     backButtonHidden: originalStyleObject.backButtonHidden,
     topTabsHidden: originalStyleObject.topTabsHidden,
     contextualMenuStatusBarColor: processColor(originalStyleObject.contextualMenuStatusBarColor),
@@ -167,7 +170,7 @@ function convertStyleParams(originalStyleObject) {
     selectedTopTabTextColor: processColor(originalStyleObject.selectedTopTabTextColor),
     selectedTopTabIndicatorHeight: originalStyleObject.selectedTopTabIndicatorHeight,
     selectedTopTabIndicatorColor: processColor(originalStyleObject.selectedTopTabIndicatorColor),
-    topTabScrollable: originalStyleObject.topTabScollable,
+    topTabsScrollable: originalStyleObject.topTabsScrollable,
     screenBackgroundColor: processColor(originalStyleObject.screenBackgroundColor),
 
     drawScreenAboveBottomTabs: !originalStyleObject.drawUnderTabBar,
@@ -180,6 +183,7 @@ function convertStyleParams(originalStyleObject) {
     forceTitlesDisplay: originalStyleObject.forceTitlesDisplay,
     bottomTabBadgeTextColor: processColor(originalStyleObject.bottomTabBadgeTextColor),
     bottomTabBadgeBackgroundColor: processColor(originalStyleObject.bottomTabBadgeBackgroundColor),
+    bottomTabFontFamily: originalStyleObject.tabFontFamily,
 
     navigationBarColor: processColor(originalStyleObject.navigationBarColor)
   }
@@ -330,6 +334,21 @@ function navigatorSetTabBadge(navigator, params) {
   }
 }
 
+function navigatorSetTabButton(navigator, params) {
+  if (params.icon) {
+    const icon = resolveAssetSource(params.icon);
+    if (icon) {
+      params.icon = icon.uri;
+    }
+  }
+  params.navigationParams = {};
+  if (params.tabIndex >= 0) {
+    newPlatformSpecific.setBottomTabButtonByIndex(params.tabIndex, params);
+  } else {
+    newPlatformSpecific.setBottomTabButtonByNavigatorId(navigator.navigatorID, params);
+  }
+}
+
 function navigatorSetTitle(navigator, params) {
   newPlatformSpecific.setScreenTitleBarTitle(navigator.screenInstanceID, params.title);
 }
@@ -338,11 +357,24 @@ function navigatorSetSubtitle(navigator, params) {
   newPlatformSpecific.setScreenTitleBarSubtitle(navigator.screenInstanceID, params.subtitle);
 }
 
+function navigatorSetStyle(navigator, params) {
+  const style = convertStyleParams(params);
+  newPlatformSpecific.setScreenStyle(navigator.screenInstanceID, style);
+}
+
 function navigatorSwitchToTab(navigator, params) {
   if (params.tabIndex >= 0) {
     newPlatformSpecific.selectBottomTabByTabIndex(params.tabIndex);
   } else {
     newPlatformSpecific.selectBottomTabByNavigatorId(navigator.navigatorID);
+  }
+}
+
+function navigatorSwitchToTopTab(navigator, params) {
+  if (params.tabIndex >= 0) {
+    newPlatformSpecific.selectTopTabByTabIndex(navigator.screenInstanceID, params.tabIndex);
+  } else {
+    newPlatformSpecific.selectTopTabByScreen(navigator.screenInstanceID);
   }
 }
 
@@ -356,9 +388,13 @@ function navigatorToggleDrawer(navigator, params) {
   }
 }
 
+function navigatorSetDrawerEnabled(navigator, params) {
+  newPlatformSpecific.setSideMenuEnabled(params.enabled, params.side);
+}
+
 function navigatorToggleNavBar(navigator, params) {
   const screenInstanceID = navigator.screenInstanceID;
-  const visible = params.to === 'shown';
+  const visible = params.to === 'shown' || params.to === 'show';
   const animated = !(params.animated === false);
 
   newPlatformSpecific.toggleTopBarVisible(
@@ -391,6 +427,28 @@ function showModal(params) {
   adapted.overrideBackPress = params.overrideBackPress;
 
   newPlatformSpecific.showModal(adapted);
+}
+
+function showLightBox(params) {
+  params.navigationParams = {};
+  addNavigatorParams(params.navigationParams);
+  params.screenId = params.screen;
+  const backgroundBlur = _.get(params, 'style.backgroundBlur');
+  const backgroundColor = _.get(params, 'style.backgroundColor');
+  if (backgroundColor) {
+    params.backgroundColor = processColor(backgroundColor);
+  } else {
+    if (backgroundBlur === 'dark') {
+      params.backgroundColor = processColor('rgba(0, 0, 0, 0.5)');
+    } else {
+      params.backgroundColor = processColor('transparent');
+    }
+  }
+  newPlatformSpecific.showLightBox(params);
+}
+
+function dismissLightBox() {
+  newPlatformSpecific.dismissLightBox();
 }
 
 function dismissModal() {
@@ -495,6 +553,9 @@ function getFab(screen) {
   if (fab.actions) {
     _.forEach(fab.actions, (action) => {
       action.icon = resolveAssetSource(action.icon).uri;
+      if (action.backgroundColor) {
+        action.backgroundColor = processColor(action.backgroundColor)
+      }
       return action;
     });
   }
@@ -567,7 +628,7 @@ function addNavigationStyleParams(screen) {
   screen.navigatorStyle = Object.assign({}, Screen.navigatorStyle, screen.navigatorStyle);
 }
 
-function showSnackbar(navigator, params) {
+function showSnackbar(params) {
   const adapted = _.cloneDeep(params);
   if (adapted.backgroundColor) {
     adapted.backgroundColor = processColor(adapted.backgroundColor);
@@ -624,13 +685,19 @@ export default {
   dismissModal,
   dismissAllModals,
   showInAppNotification,
+  showLightBox,
+  dismissLightBox,
   dismissInAppNotification,
   navigatorSetButtons,
   navigatorSetTabBadge,
+  navigatorSetTabButton,
   navigatorSetTitle,
   navigatorSetSubtitle,
+  navigatorSetStyle,
   navigatorSwitchToTab,
+  navigatorSwitchToTopTab,
   navigatorToggleDrawer,
+  navigatorSetDrawerEnabled,
   navigatorToggleTabs,
   navigatorToggleNavBar,
   showSnackbar,

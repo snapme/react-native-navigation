@@ -111,6 +111,10 @@ function dismissAllModals(params = {}) {
   return platformSpecific.dismissAllModals(params);
 }
 
+function showSnackbar(params = {}) {
+  return platformSpecific.showSnackbar(params);
+}
+
 function showLightBox(params = {}) {
   return platformSpecific.showLightBox(params);
 }
@@ -144,10 +148,14 @@ function clearEventHandler(navigatorEventID) {
 }
 
 function handleDeepLink(params = {}) {
-  if (!params.link) return;
+  const { link, payload } = params;
+
+  if (!link) return;
+
   const event = {
     type: 'DeepLink',
-    link: params.link
+    link,
+    ...(payload ? { payload } : {})
   };
   for (let i in _allNavigatorEventHandlers) {
     _allNavigatorEventHandlers[i](event);
@@ -160,6 +168,7 @@ export default {
   showModal: showModal,
   dismissModal: dismissModal,
   dismissAllModals: dismissAllModals,
+  showSnackbar: showSnackbar,
   showLightBox: showLightBox,
   dismissLightBox: dismissLightBox,
   showInAppNotification: showInAppNotification,
