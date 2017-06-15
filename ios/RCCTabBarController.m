@@ -30,6 +30,7 @@
   if (tabBarController.selectedIndex != [tabBarController.viewControllers indexOfObject:viewController]) {
     [RCCTabBarController sendScreenTabChangedEvent:viewController];
   }
+  [RCCTabBarController sendScreenTabPressedEvent:viewController];
 
   return YES;
 }
@@ -121,10 +122,12 @@
     UIImage *iconImageSelected = nil;
     id selectedIcon = tabItemLayout[@"props"][@"selectedIcon"];
     if (selectedIcon) iconImageSelected = [RCTConvert UIImage:selectedIcon];
+    UIEdgeInsets imageInsets = title.length ? UIEdgeInsetsZero : (UIEdgeInsets){6, 0, -6, 0};
 
     viewController.tabBarItem = [[UITabBarItem alloc] initWithTitle:title image:iconImage tag:0];
     viewController.tabBarItem.accessibilityIdentifier = tabItemLayout[@"props"][@"testID"];
     viewController.tabBarItem.selectedImage = iconImageSelected;
+    viewController.tabBarItem.imageInsets = imageInsets;
     
     NSMutableDictionary *unselectedAttributes = [RCTHelpers textAttributesFromDictionary:tabsStyle withPrefix:@"tabBarText" baseFont:[UIFont systemFontOfSize:10]];
     if (!unselectedAttributes[NSForegroundColorAttributeName] && buttonColor) {
@@ -276,5 +279,28 @@
   }
 }
 
++(void)sendScreenTabPressedEvent:(UIViewController*)viewController {
+  if ([viewController.view isKindOfClass:[RCTRootView class]]){
+    RCTRootView *rootView = (RCTRootView *)viewController.view;
+    
+    if (rootView.appProperties && rootView.appProperties[@"navigatorEventID"]) {
+      NSString *navigatorID = rootView.appProperties[@"navigatorID"];
+      NSString *screenInstanceID = rootView.appProperties[@"screenInstanceID"];
+      
+      [[[RCCManager sharedInstance] getBridge].eventDispatcher sendAppEventWithName:rootView.appProperties[@"navigatorEventID"] body:@
+       {
+         @"id": @"bottomTabPressed",
+         @"navigatorID": navigatorID,
+         @"screenInstanceID": screenInstanceID
+       }];
+    }
+  }
+  
+  if ([viewController isKindOfClass:[UINavigationController class]]) {
+    UINavigationController *navigationController = (UINavigationController*)viewController;
+    UIViewController *topViewController = [navigationController topViewController];
+    [RCCTabBarController sendScreenTabPressedEvent:topViewController];
+  }
+}
 
 @end
