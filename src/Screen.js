@@ -44,6 +44,10 @@ class Navigator {
     return Navigation.showModal(params);
   }
 
+  showLightBox(params = {}) {
+    return Navigation.showLightBox(params);
+  }
+
   dismissModal(params = {}) {
     return Navigation.dismissModal(params);
   }
@@ -85,15 +89,15 @@ class Navigator {
   }
 
   setStyle(params = {}) {
-    if (Platform.OS === 'ios') {
-      return platformSpecific.navigatorSetStyle(this, params);
-    } else {
-      console.log(`Setting style isn\'t supported on ${Platform.OS} yet`);
-    }
+    return platformSpecific.navigatorSetStyle(this, params);
   }
 
   toggleDrawer(params = {}) {
     return platformSpecific.navigatorToggleDrawer(this, params);
+  }
+
+  setDrawerEnabled(params = {}) {
+    return platformSpecific.navigatorSetDrawerEnabled(this, params);
   }
 
   toggleTabs(params = {}) {
@@ -108,12 +112,20 @@ class Navigator {
     return platformSpecific.navigatorSetTabBadge(this, params);
   }
 
+  setTabButton(params = {}) {
+    return platformSpecific.navigatorSetTabButton(this, params);
+  }
+
   switchToTab(params = {}) {
     return platformSpecific.navigatorSwitchToTab(this, params);
   }
 
+  switchToTopTab(params = {}) {
+    return platformSpecific.navigatorSwitchToTopTab(this, params);
+  }
+
   showSnackbar(params = {}) {
-    return platformSpecific.showSnackbar(this, params);
+    return platformSpecific.showSnackbar(params);
   }
 
   dismissSnackbar() {
@@ -153,9 +165,17 @@ class Navigator {
       Navigation.clearEventHandler(this.navigatorEventID);
     }
   }
+
+  async screenIsCurrentlyVisible() {
+    const res = await Navigation.getCurrentlyVisibleScreenId();
+    if (!res) {
+      return false;
+    }
+    return res.screenId === this.screenInstanceID;
+  }
 }
 
-export default class Screen extends Component {
+class Screen extends Component {
   static navigatorStyle = {};
   static navigatorButtons = {};
 
@@ -173,3 +193,8 @@ export default class Screen extends Component {
     }
   }
 }
+
+export {
+  Screen,
+  Navigator
+};

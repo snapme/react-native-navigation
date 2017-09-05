@@ -1,6 +1,7 @@
 package com.reactnativenavigation.params;
 
 import android.graphics.drawable.Drawable;
+import android.os.Bundle;
 import android.view.MenuItem;
 
 public class BaseTitleBarButtonParams {
@@ -20,14 +21,37 @@ public class BaseTitleBarButtonParams {
     public String eventId;
     public String label;
     public Drawable icon;
+    public String componentName;
+    public Bundle componentProps;
     public StyleParams.Color color;
     public StyleParams.Color disabledColor;
     public ShowAsAction showAsAction;
     public boolean enabled = true;
+    public boolean disableIconTint = false;
 
-    public void setColorFromScreenStyle(StyleParams.Color titleBarButtonColor) {
-        if (!color.hasColor() && titleBarButtonColor.hasColor()) {
+    public void setStyleFromScreen(StyleParams styleParams) {
+        setColorFromScreenStyle(styleParams.titleBarButtonColor);
+    }
+
+    private void setColorFromScreenStyle(StyleParams.Color titleBarButtonColor) {
+        if (titleBarButtonColor.hasColor() && shouldOverrideColorFromScreenStyle()) {
             color = titleBarButtonColor;
         }
+    }
+
+    private boolean shouldOverrideColorFromScreenStyle() {
+        // Override color if no color is defined, or if the defined color was set by AppStyle
+        return !color.hasColor() || color == AppStyle.appStyle.titleBarButtonColor;
+    }
+
+    public StyleParams.Color getColor() {
+        if (enabled) {
+            return color;
+        }
+        return disabledColor.hasColor() ? disabledColor : AppStyle.appStyle.titleBarDisabledButtonColor;
+    }
+
+    public boolean hasComponent() {
+        return componentName != null;
     }
 }
